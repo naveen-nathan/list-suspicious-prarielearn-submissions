@@ -1,6 +1,8 @@
 import time, requests, datetime
 
 import os.path
+import json
+import re
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -11,6 +13,40 @@ from googleapiclient.errors import HttpError
 COURSE_INSTANCE_ID = 155812
 SERVER = "https://us.prairielearn.com/pl/api/v1"
 ASSESMENT_ID = 2436638
+
+# CS10 Su24 course id
+COURSE_ID = 782967
+# CS10 Su24 lab2 assignment id
+ASSIGNMENT_ID = "4486584"
+# This scope allows for write access.
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+SPREADSHEET_ID = ""
+
+def allow_user_to_authenticate_google_account():
+    """
+    Allows the user authenticate their google account, allowing the script to modify spreadsheets in their name.
+    Borrowed from here: https://developers.google.com/sheets/api/quickstart/python
+    """
+    creds = None
+    # The file token.json stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists("token.json"):
+        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+    else:
+        flow = InstalledAppFlow.from_client_secrets_file(
+          "credentials.json", SCOPES
+       )
+        creds = flow.run_local_server(port=0)
+        print("Authentication succesful")
+    # Save the credentials for the next run
+    with open("token.json", "w") as token:
+      token.write(creds.to_json())
+    return creds
 
 """
 This method is adapted from Prairielearn's public repository.
@@ -66,10 +102,10 @@ def get_final_submission_timestamps(assesment_id, course_instance_path, token):
     return name_to_final_submission
 
 def main():
-    token = input("Please enter your PrairieLearn api token: ")
+    #token = input("Please enter your PrairieLearn api token: ")
     course_instance_path = f'/course_instances/{COURSE_INSTANCE_ID}'
-    get_final_submission_timestamps(ASSESMENT_ID, course_instance_path, token)
-
+    #get_final_submission_timestamps(ASSESMENT_ID, course_instance_path, token)
+    creds = allow_user_to_authenticate_google_account()
 
 main()
 
