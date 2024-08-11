@@ -20,7 +20,7 @@ COURSE_ID = 782967
 ASSIGNMENT_ID = "4486584"
 # This scope allows for write access.
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-SPREADSHEET_ID = ""
+SPREADSHEET_ID = "16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI"
 
 def allow_user_to_authenticate_google_account():
     """
@@ -101,11 +101,39 @@ def get_final_submission_timestamps(assesment_id, course_instance_path, token):
         name_to_final_submission[assessment_instance['user_name']] = determine_final_submission_time(submission_log)
     return name_to_final_submission
 
+def get_email_to_timestamp(sheet, sid, subsheet_name, email_column_letter, time_left_column_letter):
+    emails_request_result = (sheet.values().get(
+    spreadsheetId=sid,
+    range=f'{subsheet_name}!{email_column_letter}2:{email_column_letter}').execute()
+    )
+    emails = emails_request_result.get("values", [])
+
+    timestamp_request_result = (sheet.values().get(
+     spreadsheetId=sid,
+     range=f'{subsheet_name}!{time_left_column_letter}2:{time_left_column_letter}').execute()
+     )
+
+    timestamps = timestamp_request_result.get("values", [])
+
+    return (emails, timestamps)
+
+def initialize_sheet_api_instance(creds):
+    service = build("sheets", "v4", credentials=creds)
+    sheet = service.spreadsheets()
+    return sheet
 def main():
     #token = input("Please enter your PrairieLearn api token: ")
     course_instance_path = f'/course_instances/{COURSE_INSTANCE_ID}'
     #get_final_submission_timestamps(ASSESMENT_ID, course_instance_path, token)
     creds = allow_user_to_authenticate_google_account()
+    sheet = initialize_sheet_api_instance(creds)
+    emails = get_email_to_timestamp(sheet, SPREADSHEET_ID, "Final", 'C', 8)
+    print(emails)
+
+
+
+
+
 
 main()
 
