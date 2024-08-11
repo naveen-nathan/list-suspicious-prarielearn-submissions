@@ -115,7 +115,11 @@ def get_email_to_timestamp(sheet, sid, subsheet_name, email_column_letter, time_
 
     timestamps = timestamp_request_result.get("values", [])
 
-    return (emails, timestamps)
+    emails_and_timestamps = zip(emails, timestamps)
+
+    emails_to_timestamps = {pair[0][0]:pair[1][0] for pair in iter(emails_and_timestamps) if pair[1]}
+
+    return emails_to_timestamps
 
 def initialize_sheet_api_instance(creds):
     service = build("sheets", "v4", credentials=creds)
@@ -127,13 +131,8 @@ def main():
     #get_final_submission_timestamps(ASSESMENT_ID, course_instance_path, token)
     creds = allow_user_to_authenticate_google_account()
     sheet = initialize_sheet_api_instance(creds)
-    emails = get_email_to_timestamp(sheet, SPREADSHEET_ID, "Final", 'C', 8)
-    print(emails)
-
-
-
-
-
+    emails_to_timestamps = get_email_to_timestamp(sheet, SPREADSHEET_ID, "Final", 'C', 'H')
+    print(emails_to_timestamps)
 
 main()
 
