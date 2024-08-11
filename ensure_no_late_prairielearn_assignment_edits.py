@@ -1,5 +1,13 @@
 import time, requests, datetime
 
+import os.path
+
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+
 COURSE_INSTANCE_ID = 155812
 SERVER = "https://us.prairielearn.com/pl/api/v1"
 ASSESMENT_ID = 2436638
@@ -8,7 +16,7 @@ ASSESMENT_ID = 2436638
 This method is adapted from Prairielearn's public repository.
 https://github.com/PrairieLearn/PrairieLearn/blob/63c90a6523a3061743b8653a4cfafc62e0e0dbff/tools/api_download.py#L68
 """
-def get_and_return_json(endpoint, token):
+def get_json(endpoint, token):
 
     url = SERVER + endpoint
     headers = {'Private-Token': token}
@@ -31,18 +39,37 @@ def get_and_return_json(endpoint, token):
             raise Exception(f'Invalid status returned for {url}: {r.status_code}')
         
     end_time = time.time() 
-    #print(f'successfully downloaded {r.headers["content-length"]} bytes in {end_time - start_time} seconds')
 
     data = r.json()
 
     return data
 
+def determine_final_submission_time(submission_log):
+
+    # Iterate through submission_log backward to find the final submission.
+    for i in range(len(submission_log) - 1, -1, -1):
+        if submission_log[i]['event_name'] == 'Submission':
+            return submission_log[i]['date_iso8601']
+    return None
+
+def get_final_submission_timestamps(assesment_id, course_instance_path, token):
+    name_to_final_submission = {}
+    # An assessment_instance is a given student's instance of an assignment
+    assessment_instances = get_json(
+        f'{course_instance_path}/assessments/{assesment_id}/assessment_instances',
+        token)
+    for assessment_instance in assessment_instances:
+        submission_log = get_json(
+            f"{course_instance_path}/assessment_instances/{assessment_instance['assessment_instance_id']}/log",
+            token)
+        name_to_final_submission[assessment_instance['user_name']] = determine_final_submission_time(submission_log)
+    return name_to_final_submission
+
 def main():
     token = input("Please enter your PrairieLearn api token: ")
     course_instance_path = f'/course_instances/{COURSE_INSTANCE_ID}'
+    get_final_submission_timestamps(ASSESMENT_ID, course_instance_path, token)
 
-    assessment_instances = get_and_return_json(
-                f'{course_instance_path}/assessments/{ASSESMENT_ID}/assessment_instances', 
-                token)
 
 main()
+
