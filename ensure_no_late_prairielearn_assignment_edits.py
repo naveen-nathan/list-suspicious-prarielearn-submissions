@@ -2,7 +2,7 @@ import time, requests, datetime
 
 import os.path
 import json
-import re
+import pytz
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -98,7 +98,7 @@ def get_final_submission_timestamps(assesment_id, course_instance_path, token):
         submission_log = get_json(
             f"{course_instance_path}/assessment_instances/{assessment_instance['assessment_instance_id']}/log",
             token)
-        name_to_final_submission[assessment_instance['user_name']] = determine_final_submission_time(submission_log)
+        name_to_final_submission[assessment_instance['user_uid']] = determine_final_submission_time(submission_log)
     return name_to_final_submission
 
 def get_email_to_timestamp(sheet, sid, subsheet_name, email_column_letter, time_left_column_letter):
@@ -125,14 +125,27 @@ def initialize_sheet_api_instance(creds):
     service = build("sheets", "v4", credentials=creds)
     sheet = service.spreadsheets()
     return sheet
+
+def is_submission_late(pl_time, spreadsheet_time):
+    format_data = "%m/%d/%Y %H:%M:%S"
+    spreadsheet_time_as_iso = datetime.datetime.strptime(spreadsheet_time, format_data)
+    pl_time_as_iso = datetime.datetime.fromisoformat(pl_time)
+    spreadsheet_time_with_pl_tz = spreadsheet_time_as_iso.replace(tzinfo=pl_time_as_iso.tzinfo)
+    return pl_time_as_iso > spreadsheet_time_with_pl_tz
+
 def main():
-    #token = input("Please enter your PrairieLearn api token: ")
+    token = input("Please enter your PrairieLearn api token: ")
     course_instance_path = f'/course_instances/{COURSE_INSTANCE_ID}'
-    #get_final_submission_timestamps(ASSESMENT_ID, course_instance_path, token)
+    emails_to_pl_final_submission_timestamps = get_final_submission_timestamps(ASSESMENT_ID, course_instance_path, token)
     creds = allow_user_to_authenticate_google_account()
     sheet = initialize_sheet_api_instance(creds)
-    emails_to_timestamps = get_email_to_timestamp(sheet, SPREADSHEET_ID, "Final", 'C', 'H')
-    print(emails_to_timestamps)
+
+    emails_to_gs_timestamps = get_email_to_timestamp(sheet, SPREADSHEET_ID, "Final", 'C', 'H')
+    late_submitters = []
+    for email, timestamp in emails_to_gs_timestamps.items():
+        if is_submission_late(emails_to_pl_final_submission_timestamps[email], timestamp):
+            late_submitters.append(email)
+
+    print(late_submitters)
 
 main()
-
