@@ -15,7 +15,7 @@ SERVER = "https://us.prairielearn.com/pl/api/v1"
 
 # The keys of the dictionary are ASSESMENT_IDs.
 # The items stored in the tuples are as follows: (spreadsheet_id, subsheet_name, email_column_letter, time_left_column_letter)
-ASSESMENT_ID_TO_SPREADSHEET_INFO = {2436638: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Final", 'C', 'H')}
+ASSESMENT_ID_TO_SPREADSHEET_INFO = {2436638: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Final", 'C', 'H'), 2436315: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Final", 'C', 'M'), 2438091: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Friday Retake", 'C', 'H'), 2438059: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Friday Retake", 'C', 'M')}
 
 
 # This scope allows for write access.
@@ -131,7 +131,7 @@ def is_submission_late(pl_time, spreadsheet_time):
     spreadsheet_time_as_iso = datetime.datetime.strptime(spreadsheet_time, format_data)
     pl_time_as_iso = datetime.datetime.fromisoformat(pl_time)
     spreadsheet_time_with_pl_tz = spreadsheet_time_as_iso.replace(tzinfo=pl_time_as_iso.tzinfo)
-    return pl_time_as_iso > spreadsheet_time_with_pl_tz
+    return (pl_time_as_iso > spreadsheet_time_with_pl_tz), (pl_time_as_iso - spreadsheet_time_with_pl_tz)
 
 
 def get_late_submitter_list_for_given_exam(course_instance_path, sheet, token, assesment_id):
@@ -140,14 +140,20 @@ def get_late_submitter_list_for_given_exam(course_instance_path, sheet, token, a
     email_column_letter = ASSESMENT_ID_TO_SPREADSHEET_INFO[assesment_id][2]
     time_left_column_letter = ASSESMENT_ID_TO_SPREADSHEET_INFO[assesment_id][3]
 
-    emails_to_pl_final_submission_timestamps = get_final_submission_timestamps(assesment_id, course_instance_path,
-                                                                               token)
     emails_to_gs_timestamps = get_email_to_timestamp(sheet, spreadsheet_id, subsheet_name, email_column_letter,
                                                      time_left_column_letter)
-    late_submitters = []
-    for email, timestamp in emails_to_gs_timestamps.items():
-        if is_submission_late(emails_to_pl_final_submission_timestamps[email], timestamp):
-            late_submitters.append(email)
+
+    if not emails_to_gs_timestamps:
+        return {}
+
+    emails_to_pl_final_submission_timestamps = get_final_submission_timestamps(assesment_id, course_instance_path,
+                                                                               token)
+
+    late_submitters = {}
+    for email, gs_timestamp in emails_to_gs_timestamps.items():
+        is_late, difference = is_submission_late(emails_to_pl_final_submission_timestamps[email], gs_timestamp)
+        if is_late:
+            late_submitters[email] = difference
     return late_submitters
 
 def main():
