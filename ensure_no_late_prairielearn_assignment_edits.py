@@ -2,7 +2,6 @@ import time, requests, datetime
 
 import os.path
 import json
-import pytz
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -10,23 +9,24 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+# CS10 Su24 course id
 COURSE_INSTANCE_ID = 155812
 SERVER = "https://us.prairielearn.com/pl/api/v1"
-ASSESMENT_ID = 2436638
 
-# CS10 Su24 course id
-COURSE_ID = 782967
-# CS10 Su24 lab2 assignment id
-ASSIGNMENT_ID = "4486584"
+# The keys of the dictionary are ASSESMENT_IDs.
+# The items stored in the tuples are as follows: (spreadsheet_id, subsheet_name, email_column_letter, time_left_column_letter)
+ASSESMENT_ID_TO_SPREADSHEET_INFO = {2436638: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Final", 'C', 'H')}
+
+
 # This scope allows for write access.
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 SPREADSHEET_ID = "16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI"
 
+"""
+Allows the user authenticate their google account, allowing the script to modify spreadsheets in their name.
+Borrowed from here: https://developers.google.com/sheets/api/quickstart/python
+"""
 def allow_user_to_authenticate_google_account():
-    """
-    Allows the user authenticate their google account, allowing the script to modify spreadsheets in their name.
-    Borrowed from here: https://developers.google.com/sheets/api/quickstart/python
-    """
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -133,19 +133,34 @@ def is_submission_late(pl_time, spreadsheet_time):
     spreadsheet_time_with_pl_tz = spreadsheet_time_as_iso.replace(tzinfo=pl_time_as_iso.tzinfo)
     return pl_time_as_iso > spreadsheet_time_with_pl_tz
 
-def main():
-    token = input("Please enter your PrairieLearn api token: ")
-    course_instance_path = f'/course_instances/{COURSE_INSTANCE_ID}'
-    emails_to_pl_final_submission_timestamps = get_final_submission_timestamps(ASSESMENT_ID, course_instance_path, token)
-    creds = allow_user_to_authenticate_google_account()
-    sheet = initialize_sheet_api_instance(creds)
 
-    emails_to_gs_timestamps = get_email_to_timestamp(sheet, SPREADSHEET_ID, "Final", 'C', 'H')
+def get_late_submitter_list_for_given_exam(course_instance_path, sheet, token, assesment_id):
+    spreadsheet_id = ASSESMENT_ID_TO_SPREADSHEET_INFO[assesment_id][0]
+    subsheet_name = ASSESMENT_ID_TO_SPREADSHEET_INFO[assesment_id][1]
+    email_column_letter = ASSESMENT_ID_TO_SPREADSHEET_INFO[assesment_id][2]
+    time_left_column_letter = ASSESMENT_ID_TO_SPREADSHEET_INFO[assesment_id][3]
+
+    emails_to_pl_final_submission_timestamps = get_final_submission_timestamps(assesment_id, course_instance_path,
+                                                                               token)
+    emails_to_gs_timestamps = get_email_to_timestamp(sheet, spreadsheet_id, subsheet_name, email_column_letter,
+                                                     time_left_column_letter)
     late_submitters = []
     for email, timestamp in emails_to_gs_timestamps.items():
         if is_submission_late(emails_to_pl_final_submission_timestamps[email], timestamp):
             late_submitters.append(email)
+    return late_submitters
 
-    print(late_submitters)
+def main():
+    token = input("Please enter your PrairieLearn api token: ")
+    course_instance_path = f'/course_instances/{COURSE_INSTANCE_ID}'
+    creds = allow_user_to_authenticate_google_account()
+    sheet = initialize_sheet_api_instance(creds)
+
+    exam_to_late_submitter_list = {}
+
+    for assesment_id in ASSESMENT_ID_TO_SPREADSHEET_INFO:
+        exam_to_late_submitter_list[assesment_id] = get_late_submitter_list_for_given_exam(course_instance_path, sheet, token, assesment_id)
+
+    print(exam_to_late_submitter_list)
 
 main()
