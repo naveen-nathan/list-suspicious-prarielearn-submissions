@@ -15,7 +15,7 @@ SERVER = "https://us.prairielearn.com/pl/api/v1"
 
 # The keys of the dictionary are ASSESMENT_IDs.
 # The items stored in the tuples are as follows: (spreadsheet_id, subsheet_name, email_column_letter, time_left_column_letter)
-ASSESMENT_ID_TO_SPREADSHEET_INFO = {2436638: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Final", 'C', 'H'), 2436315: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Final", 'C', 'M'), 2438091: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Friday Retake", 'C', 'H'), 2438059: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Friday Retake", 'C', 'M')}
+ASSESMENT_ID_TO_SPREADSHEET_INFO = {2436638: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Final", 'C', 'H'), 2436315: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Final", 'C', 'M'), 2438091: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Friday Retake", 'C', 'H'), 2438059: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Friday Retake", 'C', 'M'), 2438091: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Saturday Retake", 'C', 'H'), 2438059: ("16e6hWK4wWiqetuyJrDvBy4O9Wwp83NR1JptZU1dIIxI", "Saturday Retake", 'C', 'M')}
 
 
 # This scope allows for write access.
