@@ -37,12 +37,12 @@ def allow_user_to_authenticate_google_account():
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
-    else:
-        flow = InstalledAppFlow.from_client_secrets_file(
-          "credentials.json", SCOPES
-       )
-        creds = flow.run_local_server(port=0)
-        print("Authentication succesful")
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+              "credentials.json", SCOPES
+           )
+            creds = flow.run_local_server(port=0)
+            print("Authentication succesful")
     # Save the credentials for the next run
     with open("token.json", "w") as token:
       token.write(creds.to_json())
@@ -83,9 +83,11 @@ def get_json(endpoint, token):
 def determine_final_submission_time(submission_log):
 
     # Iterate through submission_log backward to find the final submission.
-    for i in range(len(submission_log) - 1, -1, -1):
+    i = len(submission_log) - 1
+    while i > 0:#for i in range(len(submission_log) - 1, -1, -1):
         if submission_log[i]['event_name'] == 'Submission':
             return submission_log[i]['date_iso8601']
+        i -= 1
     return None
 
 def get_final_submission_timestamps(assesment_id, course_instance_path, token):
